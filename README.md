@@ -15,3 +15,14 @@ Push your `.xopp` notebook files to the `main` branch:
 git add your_note.xopp
 git commit -m "Add new notes"
 git push origin main
+```
+
+### 2️⃣ Automatic Processing
+GitHub Actions will detect the newly uploaded .xopp file, convert it into a PDF, and store the output in output-branch.
+
+### 3️⃣ Download the PDF
+You can access the converted PDF by checking out the output-branch:
+```bash
+git checkout output-branch
+git pull origin output-branch
+```
