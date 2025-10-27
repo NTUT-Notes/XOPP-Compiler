@@ -60,17 +60,20 @@ jobs:
       
       - name: Move output files and prepare branch
         run: |
-          # 1. 將 output 資料夾保存到臨時目錄以外的位置
+          # Temporarily move all files outside the repo 
           mkdir -p /tmp/output_backup
-          cp -r ./output/* /tmp/output_backup/
+          cp -r ./output/* /tmp/output_backup
           
-          # 2. 刪除所有檔案(除了 .git)
+          # 2. Delete all files excluding .git folder
           find . -mindepth 1 -not -path "./.git*" -delete
+          rm -r .github
+          rm .gitattributes
+          rm .gitignore
+
+          # 3. Move back all file from tmp to repo
+          cp -r /tmp/output_backup/* .
           
-          # 3. 將 output 資料夾中的檔案複製到根目錄
-          cp -r /tmp/output_backup/* ./
-          
-          # 4. 確認檔案已正確複製
+          # 4. Final check for the file existence
           ls -la
 
       - name: Delete old output branch if exists
@@ -136,17 +139,20 @@ jobs:
 
       - name: Move output files and prepare branch
         run: |
-          # 1. 將 output 資料夾保存到臨時目錄以外的位置
+          # Temporarily move all files outside the repo 
           mkdir -p /tmp/output_backup
-          cp -r ./output/* /tmp/output_backup/
+          cp -r ./output/* /tmp/output_backup
           
-          # 2. 刪除所有檔案(除了 .git)
+          # 2. Delete all files excluding .git folder
           find . -mindepth 1 -not -path "./.git*" -delete
+          rm -r .github
+          rm .gitattributes
+          rm .gitignore
+
+          # 3. Move back all file from tmp to repo
+          cp -r /tmp/output_backup/* .
           
-          # 3. 將 output 資料夾中的檔案複製到根目錄
-          cp -r /tmp/output_backup/* ./
-          
-          # 4. 確認檔案已正確複製
+          # 4. Final check for the file existence
           ls -la
 
       - name: Delete old output branch if exists
