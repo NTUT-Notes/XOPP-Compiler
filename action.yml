@@ -1,0 +1,147 @@
+name: Build xopp files into pdf
+
+inputs:
+  xopp_directory:
+    type: string
+    default: '.'
+    
+  output_directory:
+    type: string
+    default: 'compiled-pdfs'
+
+  publish_branch:
+    description: '要推送的目標分支名稱'
+    type: string
+    default: 'output-pdfs'
+    required: false
+  
+  font_name:
+    type: string
+    default: ''
+  
+  font_url:
+    description: '字型壓縮檔 (.zip) 的直連網址 (一行一個)'
+    default: ''
+    required: false
+    type: string
+
+permissions:
+  contents: write
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Downstream (Notes)
+      uses: actions/checkout@v4
+
+    - name: Setup Fontist
+      if: ${{ inputs.font_name != '' }}
+      uses: fontist/setup-fontist@v2
+
+    - name: Install Fontist Fonts
+      if: ${{ inputs.font_name != '' }}
+      shell: bash
+      run: |
+        IFS=$'\n'
+        for font in ${{ inputs.font_name }}; do
+          clean_font=$(echo "$font" | xargs)
+          if [ ! -z "$clean_font" ]; then
+            fontist install "$clean_font"
+          fi
+        done
+
+    - name: Install Custom Fonts from URLs
+      if: ${{ inputs.font_url != '' }}
+      shell: bash
+      run: |
+        echo "Custom font detected, now installing..."
+        
+        # 建立系統字型目錄
+        mkdir -p ~/.local/share/fonts
+        
+        # 讀取輸入的 URL 列表
+        URLS="${{ inputs.font_url }}"
+        IFS=$'\n'
+        
+        count=0
+        for url in $URLS; do
+          url=$(echo "$url" | xargs) # 去除空白
+          if [ -z "$url" ]; then continue; fi
+          
+          echo "Downloading temp_font_${count}.zip from $url"
+          wget -q "$url" -O "temp_font_${count}.zip"
+          
+          echo "Un-compressing: temp_font_${count}.zip"
+          unzip -q "temp_font_${count}.zip" -d "font_extract_$count"
+          
+          echo "Copying fonts from temp_font_${count}.zip"
+          find "font_extract_$count" -type f \( -iname "*.ttf" -o -iname "*.otf" \) -exec mv {} ~/.local/share/fonts/ \;
+          
+          # Clean up
+          rm -rf "font_pack_$count.zip" "font_extract_$count"
+          
+          count=$((count+1))
+        done
+        
+        echo "所有 URL 字型下載完畢。"
+
+    - name: Update Font Cache
+      shell: bash
+      if: ${{ inputs.font_name != '' || inputs.font_url != '' }}
+      run: fc-cache -fv
+
+    - name: Checkout Upstream (Build Tools)
+      uses: actions/checkout@v4
+      with:
+        repository: YFHD-osu/XOPP-Compiler
+        path: .build-tools
+        ref: main
+      
+    - name: Install fonts
+      uses: YFHD-osu/XOPP-Compiler/.github/actions/setup-font@main
+      with:
+        formula_name: ${{ inputs.font_name }}
+        custom_urls: ${{ inputs.font_url }}
+        
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/apt/archives  # 這是 apt 預設存放下載檔的地方
+        key: ${{ runner.os }}-apt-xournalpp
+        restore-keys: |
+          ${{ runner.os }}-apt-
+    
+    - name: Install Xournal++
+      shell: bash
+      run: |
+        sudo apt-get update
+        
+        sudo apt-get install -y \
+          -o Binary::apt::APT::Keep-Downloaded-Packages="true" \
+          xournalpp
+
+    - name: Run compile script
+      shell: bash
+      run: |
+        echo "=== 1. 列出根目錄所有檔案 (包含隱藏檔) ==="
+        ls -la
+        
+        echo "=== 2. 遞迴列出 .build-tools 內的所有檔案 ==="
+        # 這行會告訴你 convert.sh 到底躲在哪個子資料夾裡
+        ls -R .build-tools
+        
+        echo "=== 3. 嘗試執行 (修正路徑) ==="
+        # 假設它在 scripts 資料夾下 (請根據上面 ls -R 的結果修改這裡)
+
+        bash ${{ github.workspace }}/.build-tools/convert.sh "${{ github.workspace }}/${{ inputs.output_directory }}"
+
+    - name: Deploy to Output Branch
+      if: ${{ inputs.publish_branch != '' }}
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ${{ inputs.output_directory }}
+        
+        publish_branch: ${{ inputs.publish_branch }}
+        force_orphan: true
+        commit_message: "Deploy compiled PDFs from ${{ github.sha }}"
