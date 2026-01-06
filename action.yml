@@ -31,9 +31,6 @@ permissions:
 runs:
   using: "composite"
   steps:
-    - name: Checkout Downstream (Notes)
-      uses: actions/checkout@v4
-
     - name: Setup Fontist
       if: ${{ inputs.font_name != '' }}
       uses: fontist/setup-fontist@v2
@@ -96,13 +93,7 @@ runs:
         repository: YFHD-osu/XOPP-Compiler
         path: .build-tools
         ref: main
-      
-    - name: Install fonts
-      uses: YFHD-osu/XOPP-Compiler/.github/actions/setup-font@main
-      with:
-        formula_name: ${{ inputs.font_name }}
-        custom_urls: ${{ inputs.font_url }}
-        
+  
     - name: Cache apt packages
       uses: actions/cache@v4
       with:
