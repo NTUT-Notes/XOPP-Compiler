@@ -7,7 +7,7 @@ set -o pipefail
 
 # --- 全域設定 ---
 # 轉換後的 PDF 檔案將會被放置在此資料夾下，並維持原有的相對路徑結構
-OUTPUT_DIR="./output"
+OUTPUT_DIR="${1:-./output}"
 
 # --- 函式定義 ---
 

@@ -1,0 +1,74 @@
+name: 'Setup Font'
+description: 'Setup the font by name and custom url'
+
+inputs:
+  formula_name:
+    type: string
+    default: ''
+
+  custom_urls:
+    description: '字型壓縮檔 (.zip) 的直連網址 (一行一個)'
+    default: ''
+    required: false
+    type: string
+    
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Fontist
+      if: ${{ inputs.formula_name != '' }}
+      uses: fontist/setup-fontist@v2
+
+    - name: Install Fontist Fonts
+      if: ${{ inputs.formula_name != '' }}
+      shell: bash
+      run: |
+        IFS=$'\n'
+        for font in ${{ inputs.formula_name }}; do
+          clean_font=$(echo "$font" | xargs)
+          if [ ! -z "$clean_font" ]; then
+            fontist install "$clean_font"
+          fi
+        done
+        
+
+    - name: Install Custom Fonts from URLs
+      if: ${{ inputs.custom_urls != '' }}
+      shell: bash
+      run: |
+        echo "Custom font detected, now installing..."
+        
+        # 建立系統字型目錄
+        mkdir -p ~/.local/share/fonts
+        
+        # 讀取輸入的 URL 列表
+        URLS="${{ inputs.custom_urls }}"
+        IFS=$'\n'
+        
+        count=0
+        for url in $URLS; do
+          url=$(echo "$url" | xargs) # 去除空白
+          if [ -z "$url" ]; then continue; fi
+          
+          echo "Downloading temp_font_${count}.zip from $url"
+          wget -q "$url" -O "temp_font_${count}.zip"
+          
+          echo "Un-compressing: temp_font_${count}.zip"
+          unzip -q "temp_font_${count}.zip" -d "font_extract_$count"
+          
+          echo "Copying fonts from temp_font_${count}.zip"
+          find "font_extract_$count" -type f \( -iname "*.ttf" -o -iname "*.otf" \) -exec mv {} ~/.local/share/fonts/ \;
+          
+          # Clean up
+          rm -rf "font_pack_$count.zip" "font_extract_$count"
+          
+          count=$((count+1))
+        done
+        
+        echo "所有 URL 字型下載完畢。"
+
+    - name: Update Font Cache
+      # Update font cache 
+      shell: bash
+      if: ${{ inputs.required_fonts != '' || inputs.custom_urls != '' }}
+      run: fc-cache -fv
