@@ -10,11 +10,17 @@ inputs:
     default: 'compiled-pdfs'
 
   publish_branch:
-    description: '要推送的目標分支名稱'
+    description: 'The name of the output branch'
     type: string
-    default: 'output-pdfs'
+    default: ''
     required: false
-  
+
+  github_token:
+    description: 'Token for managing the branch'
+    type: string
+    default: ''
+    required: false
+    
   font_name:
     type: string
     default: ''
@@ -130,7 +136,7 @@ runs:
       if: ${{ inputs.publish_branch != '' }}
       uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ inputs.github_token }}
         publish_dir: ${{ inputs.output_directory }}
         
         publish_branch: ${{ inputs.publish_branch }}
