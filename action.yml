@@ -148,5 +148,5 @@ runs:
       uses: peaceiris/actions-gh-pages@v4
       if: ${{ inputs.publish_page }}
       with:
-        github_token: ${{ github.GITHUB_TOKEN }}
+        github_token: ${{ github.token }}
         publish_dir: "${{ github.workspace }}/${{ inputs.output_directory }}"
