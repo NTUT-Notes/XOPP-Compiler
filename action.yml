@@ -19,6 +19,12 @@ inputs:
     required: false
     type: string
 
+  publish_page:
+    description: 'Publish to github pages'
+    default: false
+    required: false
+    type: bool
+
 permissions:
   contents: write
 
@@ -119,3 +125,28 @@ runs:
         # 假設它在 scripts 資料夾下 (請根據上面 ls -R 的結果修改這裡)
 
         bash ${{ github.workspace }}/.build-tools/convert.sh "${{ github.workspace }}/${{ inputs.output_directory }}"
+
+    - name: Creating github pages
+      shell: bash
+      if: ${{ inputs.publish_page }}
+      run: |
+        cp ${{ github.workspace }}/.build-tools/index.html \
+          "${{ github.workspace }}/${{ inputs.output_directory }}/index.html"
+
+        bash ${{ github.workspace }}/.build-tools/generate_files.sh \
+          "${{ github.workspace }}/${{ inputs.output_directory }}" \
+          "${{ github.workspace }}/${{ inputs.output_directory }}/files.json"
+
+        bash ${{ github.workspace }}/.build-tools/generate_settings.sh \
+          "${{ github.workspace }}/${{ inputs.output_directory }}/settings.json" \
+          "專案：${{ github.event.repository.name }}" \
+          "文件存檔 (最後更新: $(date +'%Y-%m-%d'))" \
+          "請點擊左側檔案" \
+          "系統自動生成之 PDF 預覽"
+    
+    - name: Publish to github pages
+      uses: peaceiris/actions-gh-pages@v4
+      if: ${{ inputs.publish_page }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: "${{ github.workspace }}/${{ inputs.output_directory }}"
