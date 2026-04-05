@@ -139,14 +139,7 @@ runs:
 
         bash ${{ github.workspace }}/.build-tools/generate_settings.sh \
           "${{ github.workspace }}/${{ inputs.output_directory }}/settings.json" \
-          "專案：${{ github.event.repository.name }}" \
-          "文件存檔 (最後更新: $(date +'%Y-%m-%d'))" \
+          "${{ github.event.repository.name }}" \
+          "更新: $(date +'%Y-%m-%d')" \
           "請點擊左側檔案" \
-          "系統自動生成之 PDF 預覽"
-    
-    - name: Publish to github pages
-      uses: peaceiris/actions-gh-pages@v4
-      if: ${{ inputs.publish_page }}
-      with:
-        github_token: ${{ github.token }}
-        publish_dir: "${{ github.workspace }}/${{ inputs.output_directory }}"
+          "預覽所有在倉庫中的筆記"
